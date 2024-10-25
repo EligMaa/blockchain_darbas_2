@@ -31,8 +31,6 @@ string hex_i_binaru(const string& hex);
 int hex_lyginimas(const string& hash1, const string& hash2);
 void lavinos_failas();
 
-void vartotoju_generavimas(int dydids);
-
 
 
 class nuu{
@@ -79,5 +77,26 @@ class vartotojas{
         
 };
 
+class transakcija{
+
+    public:
+
+        nuu nuu;
+      
+        transakcija() : siuntejas(""), gavejas(""), suma(0), ID(""){}
+        transakcija( string siuntejas, string gavejas, int suma) 
+            : siuntejas(siuntejas), gavejas(gavejas), suma(suma)
+            {  string ivestis = siuntejas + gavejas + to_string(suma);
+                ID = (nuu.hash(ivestis)) ;}
+
+        inline ~transakcija() {}
+
+        string ID;
+        string siuntejas;
+        string gavejas;
+        int suma;
+       
+        
+};
 
 #endif
