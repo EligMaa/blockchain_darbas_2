@@ -33,6 +33,7 @@ void lavinos_failas();
 
 
 
+
 class nuu{
 
     public:
@@ -71,6 +72,10 @@ class vartotojas{
 
         inline ~vartotojas() {}
 
+        string get_viesasisis_raktas() const { return viesasisis_raktas; }
+
+
+    private:
         string viesasisis_raktas;
         int valiutos_balansas;
         string vardas;   
@@ -91,10 +96,64 @@ class transakcija{
 
         inline ~transakcija() {}
 
+    private:
         string ID;
         string siuntejas;
         string gavejas;
         int suma;
+       
+        
+};
+
+class blokai{
+
+    public:
+
+        nuu nuu;
+      
+        blokai() ;
+        blokai(const vector<transakcija>& transakcijos, const string& pries_blokas, 
+            const string& versija, const string& merkel_root, int sudetingumas):
+            transakcijos(transakcijos),
+            pries_blokas(pries_blokas),
+            versija(versija),
+            merkel_root(merkel_root),
+            sudetingumas(sudetingumas),
+            nonce(0)
+        {
+            auto now = chrono::system_clock::now();
+            auto time_t_now = chrono::system_clock::to_time_t(now);
+            laikas = ctime(&time_t_now);
+            laikas.pop_back(); // Remove newline character from ctime result
+        }
+
+        string bloku_kasimas(){
+            string ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
+            string hash = nuu.hash(ivestis);
+            string ieskomas_hash = hash.substr(0, sudetingumas);
+
+            while (ieskomas_hash != hash.substr(0, sudetingumas)){
+                ++nonce;
+                ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
+                hash = nuu.hash(ivestis);
+                
+            }
+            
+            return hash;
+        
+        }
+
+        inline ~blokai() {}
+
+
+    private:
+        vector<transakcija> transakcijos;
+        string pries_blokas;
+        string laikas;
+        string versija;
+        string merkel_root;
+        int nonce;
+        int sudetingumas;
        
         
 };
