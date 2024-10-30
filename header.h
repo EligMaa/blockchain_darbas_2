@@ -65,6 +65,7 @@ class vartotojas{
     public:
         nuu nuu;
 
+        // vartotojas();
         vartotojas() : viesasisis_raktas(""), valiutos_balansas(0), vardas("") {}
         vartotojas(int valiutos_balansas, string vardas) 
             : viesasisis_raktas(nuu.hash(vardas)), 
@@ -76,6 +77,9 @@ class vartotojas{
         int get_valiutos_balansas() const { return valiutos_balansas; }
         int set_valiutos_balansas(int balansas) { valiutos_balansas = balansas; }
 
+        void info() const {
+            cout<<"Viesasisis raktas: " << viesasisis_raktas << "\nbalansas: " << valiutos_balansas << "\nVardas: " << vardas << endl;
+        }
 
     private:
         string viesasisis_raktas;
@@ -90,6 +94,7 @@ class transakcija{
 
         nuu nuu;
       
+        // transakcija();
         transakcija() : siuntejas(""), gavejas(""), suma(0), ID(""){}
         transakcija( string siuntejas, string gavejas, int suma) 
             : siuntejas(siuntejas), gavejas(gavejas), suma(suma)
@@ -98,11 +103,13 @@ class transakcija{
 
         inline ~transakcija() {}
 
-        string info(){ 
+        string info() const{ 
             return "\nSiuntejas: " + siuntejas 
             + "\ngavejas: " + gavejas + "\nsuma: " + to_string(suma) 
             + "\nID: " + ID;
         }
+
+        bool patikrinti_hash( );
 
         string get_ID() const{ return ID;}
         string get_siuntejas() const{ return siuntejas;}
@@ -115,7 +122,6 @@ class transakcija{
         string gavejas;
         int suma;
 
-        // void trans_ivygdymas( std::vector<vartotojas> vartotojai);
        
         
 };
@@ -144,22 +150,8 @@ class blokas{
             laikas.pop_back(); // Remove newline character from ctime result
         }
 
-        string bloku_kasimas(){
-
-            do {
-                ++nonce; 
-                string ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
-                hashas = nuu.hash(ivestis);
-
-                cout << "Trying nonce " << nonce << " -> Hash: " << hashas << endl;
-            } while (hashas.substr(0, sudetingumas) != string(sudetingumas, '0')); 
-            cout << "Blokas iskastas. Nonce: " << nonce << ", hash: " << hashas << endl;
-            return hashas;
-                
-                    
-        }
-
-        void info(){
+        string bloku_kasimas();
+        void info() const{
             cout << "Pries bloka: " << pries_blokas << endl;
             cout << "Hash: " << hashas << endl;
             cout << "Laikas: " << laikas << endl;
@@ -168,14 +160,20 @@ class blokas{
             cout << "Nonce: " << nonce << endl;
             cout << "Sudetingumas: " << sudetingumas << endl;
         }
+        
 
         void transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai);
 
         string get_markel_root() { return merkel_root;}
-        string get_hashas() { return hashas;}
+        string get_hashas() const { return hashas;}
+        vector<transakcija> get_transakcijas() const{
+            return transakcijos;
+        }
+        void spausdinti_bloka(const string& bloko_hash);
 
 
         inline ~blokas() {}
+
 
 
     private:
@@ -192,6 +190,7 @@ class blokas{
        
         
 };
+
 
 string blokas::skaiciuoti_merkel_root(vector<transakcija>& transakcijos) {
     // Jeigu transakcijų nėra, grąžinkite tuščią maišos reikšmę.

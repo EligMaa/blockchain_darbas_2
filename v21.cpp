@@ -3,30 +3,151 @@
 
 
 std::vector<vartotojas>vartotoju_generavimas(int dydis);
-// void transakciju_generavimas(int dydis, vector <vartotojas> &vartotojai);
 std::vector <transakcija> transakciju_generavimas(int dydis, vector <vartotojas> &vartotojai);
-void trans_ivygdymas( std::vector<vartotojas> vartotojai, const string siuntejas, const string gavejas, const int suma);
+bool trans_ivykdymas( std::vector<vartotojas>& vartotojai, const string& siuntejas, const string& gavejas, const int suma);
+bool get_block_transactions( std::vector<blokas>& blokai, const std::string& bloko_hash);
 
 
+std::vector<blokas> blokai;
+std::vector<vartotojas> vartotojai;
 
 int main(){
 
     blokas();
+
+
+    int meniu;
+    bool baigti = false;
+
+    do{ 
+       
+            cout << "\n---------- Menu ----------\n";
+            cout << "1 - isspausdinti visus blokus\n";
+            cout << "2 - isspausdinti transakcijas bloke\n";
+            cout << "3 - isspaustinti transakcijos informacija\n";
+            cout << "4 - isspausdinti vartotoja\n";
+      
+            cout<< "0 - baigti darba"<<endl;
+            cout << "Pasirink nuo 0 iki 4: ";
+
+            int choice;
+            try {
+                    cout << "Iveskite pasirinkima: " << endl;
+                    string input;
+                    cin >> input;
+
+                    if (input.find_first_not_of("0123456789") != string::npos) {     ///tikrina ar ivestas skaicius naturalusis
+                    throw invalid_argument("Netinkamas pasirinkimas");
+                    }
+
+                    meniu = stoi(input);
+
+                    if (meniu < 0 || meniu > 5) {                                   ///tikrina ar ivestas skaicius yra nuo 0 iki 9
+                        throw invalid_argument("Klaida! Iveskite nuo 0 iki 4 ");
+                    }
+
+                } 
+
+                catch (const invalid_argument & e) {
+                    cerr << "Klaida: " << e.what() << endl;
+                    cout << endl;
+
+                    continue;
+                }
+
+            std::string bloko_hash;
+            auto it = blokai.end();
+            std::string ivedimas;
+
+            switch (meniu) {
+                case 1:
+                    for ( auto& blok : blokai) {
+                        blok.info();
+                        cout << endl;
+                    }
+                    break;
+
+                case 2:{
+
+                    cout << "Iveskite bloko hash: ";
+                    cin >> ivedimas; 
+                    
+                    auto it = std::find_if(blokai.begin(), blokai.end(), [&](const blokas& blokass){
+                        return blokass.get_hashas() == ivedimas;
+                    });
+                    if(it != blokai.end()){
+                        cout<<"\nInformacija apie transakcijas bloke "<< ivedimas<<":\n";
+                        for (const auto& transakcija : it->get_transakcijas()) {
+                            cout << transakcija.info() << endl;
+                        }
+                    }
+                    else{
+                        cout << "Blokas nerastas\n";
+                    }
+                }
+
+                case 3:{
+
+                    string transId;
+                    cout << "Iveskite transakcijos ID: \n";
+                    cin >> transId;
+                    bool found = false;
+                    for (const auto& blokas : blokai) {
+                        for (const auto& transakcija : blokas.get_transakcijas()) {
+                            if (transakcija.get_ID() == transId) {
+                                cout<<transakcija.info();
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (found) break;
+                    }
+                    if (!found) {
+                        cout << "Transakcija su šiuo ID nerasta.\n";
+                    }
+
+                    break;
+                }
+
+                case 4:{
+                    cout << "Iveskite vartotojo viesasisis_raktas: ";
+                    cin >> ivedimas; 
+                    
+                    auto it = std::find_if(vartotojai.begin(), vartotojai.end(), [&](const vartotojas& vartotojas){
+                        return vartotojas.get_viesasisis_raktas() == ivedimas;
+                    });
+                    if(it != vartotojai.end()){
+                        cout<<"\nInformacija apie vartotoja "<< ivedimas<<":\n";
+                        it->info();
+                    }
+                    else{
+                        cout << "Vartotojas nerastas\n";
+                    }
+                    break;
+                }
+                case 0:
+                    baigti = true;
+                    break; 
+                    
+            }
     
-    
+
+    }while (!baigti);
+
 
     return 0;
 }
 
 blokas::blokas(){
 
-    vector<blokas> blokai;
+    // vector<blokas> blokai;
     transakciju_itraukimas_i_bloka(100, blokai);    
 }
 
 std::vector<vartotojas> vartotoju_generavimas (int dydis){
 
-    vector <vartotojas> vartotojai;
+    // vector <vartotojas> vartotojai;
     vartotojai.reserve(dydis);
     random_device rd;
     mt19937 gen(rd());
@@ -107,51 +228,36 @@ void blokas::transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai){
 
             uniform_int_distribution<> rand_transakcija(0, transakcijos.size() - 1);   // random parenka vartotojo numeri
             int idx = rand_transakcija(gen);
-            tran100.emplace_back(transakcijos[idx]);
             
-            of << transakcijos[idx].info() << std::endl;
-            trans_ivygdymas(vartotojai, transakcijos[idx].get_siuntejas(), transakcijos[idx].get_gavejas(), transakcijos[idx].get_suma());
 
+            if (!transakcijos[idx].patikrinti_hash()) {
+                    cout << "Transakcija su netinkamu ID, ignoruojama.\n";
+                    continue;
+                }
+
+            if(trans_ivykdymas(vartotojai, transakcijos[idx].get_siuntejas(), 
+            transakcijos[idx].get_gavejas(), transakcijos[idx].get_suma()) ){
+                
+                tran100.emplace_back(transakcijos[idx]);
+                of << transakcijos[idx].info() << std::endl;
+                
+
+            }
             transakcijos.erase(transakcijos.begin() + idx);
         }
-        
 
-
-        blokas blok( tran100, blokai.back().get_hashas(), "0.1", 2);
+        blokas blok( tran100, blokai.back().get_hashas(), "0.1", 3);
         cout<<"\nbloku kasimas: "<<endl;
         blok.bloku_kasimas();
         blok.info();
         blokai.emplace_back(blok);
-
-        
-        // for(const auto& tran : tran100){
-        
-        //     auto it = std::find_if(transakcijos.begin(), transakcijos.end(), [&](const transakcija& t) {
-        //         return t.get_ID() == tran.get_ID();
-        //     });
-
-        //     for (const auto& tran : transakcijos) {
-            
-        //         if (it != transakcijos.end()) {
-                    
-        //             of << it->info() << endl;
-        //             trans_ivygdymas(vartotojai, it->get_siuntejas(), it->get_gavejas(), it->get_suma());
-
-        //             transakcijos.erase(it);
-                    
-        //         }
-        //     }
-            
-        
-        // }
-        
 
     }
 
     of.close();
 }
 
-void trans_ivygdymas( std::vector<vartotojas> vartotojai, const string siuntejas, const string gavejas, const int suma){
+bool trans_ivykdymas( std::vector<vartotojas>& vartotojai, const string& siuntejas, const string& gavejas, const int suma){
 
     auto siuntejass = std::find_if(vartotojai.begin(), vartotojai.end(), [&](const vartotojas& var) {
         return (var.get_viesasisis_raktas() == siuntejas) ;
@@ -161,21 +267,55 @@ void trans_ivygdymas( std::vector<vartotojas> vartotojai, const string siuntejas
         return (var.get_viesasisis_raktas() == gavejas) ;
     });
 
+    if(siuntejass->get_valiutos_balansas() < suma){
+
+        return false;
+    }
 
     if (siuntejass != vartotojai.end() && gavejass != vartotojai.end()) {
-        // cout<<"\n\nsuma: " << suma << endl;
-        // cout<<"siuntejas: " << siuntejass->get_viesasisis_raktas() << endl;
-        // cout<<"buvo suma: " << siuntejass->get_valiutos_balansas() << endl;
+
         siuntejass->set_valiutos_balansas(siuntejass->get_valiutos_balansas() - suma);
-        // cout<<"dabar suma: " << siuntejass->get_valiutos_balansas() << endl;
-        
-        // cout<<"\ngavejas: " << gavejass->get_viesasisis_raktas() << endl ;
-        // cout<<"buvo suma: " << gavejass->get_valiutos_balansas() << endl;
         gavejass->set_valiutos_balansas(gavejass->get_valiutos_balansas() + suma);
-    
-        // cout<<"dabar suma: " << gavejass->get_valiutos_balansas() << endl  ;
     
     }
 
+    return true;
 }
+
+string blokas::bloku_kasimas(){
+
+    do {
+        ++nonce; 
+        string ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
+        hashas = nuu.hash(ivestis);
+        cout << "Trying nonce " << nonce << " -> Hash: " << hashas << endl;
+    } while (hashas.substr(0, sudetingumas) != string(sudetingumas, '0')); 
+    cout << "Blokas iskastas. Nonce: " << nonce << ", hash: " << hashas << endl;
+    return hashas;
+              
+}
+
+
+
+
+void blokas::spausdinti_bloka(const string& bloko_hash){
+
+    if (hashas == bloko_hash) {
+        info();
+    } else {
+        cout << "Blokas su tokiu hash " << bloko_hash << " nerastas grandineje" << endl;
+    }
+
+}
+
+bool transakcija::patikrinti_hash()  {
+    string input = siuntejas + gavejas + to_string(suma);
+    string expected_ID = nuu.hash(input);
+    return expected_ID == ID;
+}
+
+
+
+
+
 
