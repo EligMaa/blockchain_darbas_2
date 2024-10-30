@@ -73,6 +73,8 @@ class vartotojas{
         inline ~vartotojas() {}
 
         string get_viesasisis_raktas() const { return viesasisis_raktas; }
+        int get_valiutos_balansas() const { return valiutos_balansas; }
+        int set_valiutos_balansas(int balansas) { valiutos_balansas = balansas; }
 
 
     private:
@@ -96,28 +98,43 @@ class transakcija{
 
         inline ~transakcija() {}
 
+        string info(){ 
+            return "\nSiuntejas: " + siuntejas 
+            + "\ngavejas: " + gavejas + "\nsuma: " + to_string(suma) 
+            + "\nID: " + ID;
+        }
+
+        string get_ID() const{ return ID;}
+        string get_siuntejas() const{ return siuntejas;}
+        string get_gavejas() const{ return gavejas;}
+        int get_suma() const{ return suma;}
+
     private:
         string ID;
         string siuntejas;
         string gavejas;
         int suma;
+
+        // void trans_ivygdymas( std::vector<vartotojas> vartotojai);
        
         
 };
 
-class blokai{
+
+
+class blokas{
 
     public:
 
         nuu nuu;
       
-        blokai() ;
-        blokai(const vector<transakcija>& transakcijos, const string& pries_blokas, 
-            const string& versija, const string& merkel_root, int sudetingumas):
-            transakcijos(transakcijos),
+        blokas() ;
+        blokas( vector<transakcija>& transakcijoss, const string& pries_blokas, 
+            const string& versija, int sudetingumas):
+            transakcijos(transakcijoss),
             pries_blokas(pries_blokas),
             versija(versija),
-            merkel_root(merkel_root),
+            merkel_root( skaiciuoti_merkel_root(transakcijos)) ,
             sudetingumas(sudetingumas),
             nonce(0)
         {
@@ -128,25 +145,41 @@ class blokai{
         }
 
         string bloku_kasimas(){
-            string ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
-            string hash = nuu.hash(ivestis);
-            string ieskomas_hash = hash.substr(0, sudetingumas);
 
-            while (ieskomas_hash != hash.substr(0, sudetingumas)){
-                ++nonce;
-                ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
-                hash = nuu.hash(ivestis);
+            do {
+                ++nonce; 
+                string ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
+                hashas = nuu.hash(ivestis);
+
+                cout << "Trying nonce " << nonce << " -> Hash: " << hashas << endl;
+            } while (hashas.substr(0, sudetingumas) != string(sudetingumas, '0')); 
+            cout << "Blokas iskastas. Nonce: " << nonce << ", hash: " << hashas << endl;
+            return hashas;
                 
-            }
-            
-            return hash;
-        
+                    
         }
 
-        inline ~blokai() {}
+        void info(){
+            cout << "Pries bloka: " << pries_blokas << endl;
+            cout << "Hash: " << hashas << endl;
+            cout << "Laikas: " << laikas << endl;
+            cout << "Versija: " << versija << endl;
+            cout << "Merkel root: " << merkel_root << endl;
+            cout << "Nonce: " << nonce << endl;
+            cout << "Sudetingumas: " << sudetingumas << endl;
+        }
+
+        void transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai);
+
+        string get_markel_root() { return merkel_root;}
+        string get_hashas() { return hashas;}
+
+
+        inline ~blokas() {}
 
 
     private:
+        string hashas;
         vector<transakcija> transakcijos;
         string pries_blokas;
         string laikas;
@@ -154,8 +187,45 @@ class blokai{
         string merkel_root;
         int nonce;
         int sudetingumas;
+
+        string skaiciuoti_merkel_root( vector<transakcija>& tansakcijos);   
        
         
 };
+
+string blokas::skaiciuoti_merkel_root(vector<transakcija>& transakcijos) {
+    // Jeigu transakcijų nėra, grąžinkite tuščią maišos reikšmę.
+    if (transakcijos.empty()) {
+        return "";
+    }
+    
+    // Surinkite visų transakcijų ID kaip pradinį mazgų lygį.
+    vector<string> lygis;
+    for (auto& tx : transakcijos) {
+        lygis.push_back(tx.get_ID());
+    }
+
+    // Kiekviename lygmenyje atlikite maišos reikšmių porų sujungimą.
+    while (lygis.size() > 1) {
+        // Jeigu mazgų skaičius yra nelyginis, paskutinis elementas kopijuojamas.
+        if (lygis.size() % 2 != 0) {
+            lygis.push_back(lygis.back());
+        }
+
+        // Sukurkite naują lygį sujungdami kiekvieną porą.
+        vector<string> naujasLygis;
+        for (size_t i = 0; i < lygis.size(); i += 2) {
+            string pora = lygis[i] + lygis[i + 1];
+            naujasLygis.push_back(nuu.hash(pora));  // Sujungtos poros maišas.
+        }
+
+        // Pereikite prie naujo lygmens.
+        lygis = move(naujasLygis);
+    }
+
+    // Liko viena galutinė maišos reikšmė - Merkle šaknis.
+    return lygis[0];
+}
+
 
 #endif
