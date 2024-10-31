@@ -147,10 +147,12 @@ class blokas{
             auto now = chrono::system_clock::now();
             auto time_t_now = chrono::system_clock::to_time_t(now);
             laikas = ctime(&time_t_now);
-            laikas.pop_back(); // Remove newline character from ctime result
+            laikas.pop_back(); 
         }
 
         string bloku_kasimas();
+        // bool bloku_kasimas( int laikas, int bandymu_limitas);
+
         void info() const{
             cout << "Pries bloka: " << pries_blokas << endl;
             cout << "Hash: " << hashas << endl;
@@ -159,6 +161,7 @@ class blokas{
             cout << "Merkel root: " << merkel_root << endl;
             cout << "Nonce: " << nonce << endl;
             cout << "Sudetingumas: " << sudetingumas << endl;
+            cout << "Transakciju kiekis: " << transakcijos.size() << endl;  
         }
         
 
