@@ -150,8 +150,8 @@ class blokas{
             laikas.pop_back(); 
         }
 
-        string bloku_kasimas();
-        // bool bloku_kasimas( int laikas, int bandymu_limitas);
+        // string bloku_kasimas();
+        string bloku_kasimas(const int laikas_max, const int bandymai_max );
 
         void info() const{
             cout << "Pries bloka: " << pries_blokas << endl;

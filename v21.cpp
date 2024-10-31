@@ -207,118 +207,74 @@ void blokas::transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai){
 
     vector<vartotojas> vartotojai = vartotoju_generavimas(1000);
     vector<transakcija> transakcijos = transakciju_generavimas(1000, vartotojai);
+
+    vector<blokas> blokai_kandidatai;
+
     random_device rd; 
     mt19937 gen(rd());
 
     ofstream of("itrauktos_transakcijos.txt");
 
+    int laikas_max = 5000;
+    int bandymai_max = 100000;
+
 
     if(blokai.empty()){
         
         vector<transakcija> genesiui;
-        blokas genesis(genesiui, "0", "0.1", 1);
+        blokas genesis(genesiui, "0", "0.2", 4);
         cout<<"Genesis blokas generuotas: "<< endl;
-        genesis.bloku_kasimas();
+        genesis.bloku_kasimas(5000, 100000);
         genesis.info();
         blokai.emplace_back(genesis);
 
     }
 
-    while ( !transakcijos.empty() ) {
+    while ( blokai.size() < 6 ) {
         
-        vector<transakcija> tran100;
+        vector<blokas> kandidat_blokai = generuoti_kandidatinius_blokus(transakcijos, blokai.back().get_hashas(), "0.2", 5, 5);
+        bool block_mined = false;
+        vector<int> panaudoti;  // ineksai
+        uniform_int_distribution<> rand_kandidatas(0, kandidat_blokai.size() - 1);
 
-        for(int i = 0; i < dydis && !transakcijos.empty(); ++i){
 
-            uniform_int_distribution<> rand_transakcija(0, transakcijos.size() - 1);   // random parenka vartotojo numeri
-            int idx = rand_transakcija(gen);
+
+        while (!block_mined && panaudoti.size() < kandidat_blokai.size()) {
+
+            int idx;
+            panaudoti.push_back(idx);
+            do {
+                idx = rand_kandidatas(gen);
+            } while (find(panaudoti.begin(), panaudoti.end(), idx) != panaudoti.end());    // uztikrina kad nkastu to pacio bloko kelis kartus
+
+
+            cout << "\nKasamas " << idx + 1 << endl;
+            string iskastas = kandidat_blokai[idx].bloku_kasimas(laikas_max, bandymai_max);
+
+            if (!iskastas.empty()) {
+                blokai.push_back(kandidat_blokai[idx]);
+                block_mined = true;
+                break;
+            } else {
+                cout << "Nepavyko iskasti bloko " << idx + 1 << "\n";
+            }
+           
+        }        
             
 
-            if (!transakcijos[idx].patikrinti_hash()) {
-                    cout << "Transakcija su netinkamu ID, ignoruojama.\n";
-                    continue;
-                }
-
-            if(trans_ivykdymas(vartotojai, transakcijos[idx].get_siuntejas(), 
-            transakcijos[idx].get_gavejas(), transakcijos[idx].get_suma()) ){
-                
-                tran100.emplace_back(transakcijos[idx]);
-                of << transakcijos[idx].info() << std::endl;
-                
-
-            }
-            transakcijos.erase(transakcijos.begin() + idx);
+        if (!block_mined) {
+            std::cout << "Neiskastas nei vienas blokas. Didinamas laikas ir bandymai \n";
+            laikas_max += 5000; 
+            bandymai_max += 100000; 
         }
 
-        blokas blok( tran100, blokai.back().get_hashas(), "0.1", 3);
-        cout<<"\nbloku kasimas: "<<endl;
-        blok.bloku_kasimas();
-        blok.info();
-        blokai.emplace_back(blok);
 
     }
 
     of.close();
+    
 }
 
-// void blokas::transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai){
-
-//     vector<vartotojas> vartotojai = vartotoju_generavimas(1000);
-//     vector<transakcija> transakcijos = transakciju_generavimas(1000, vartotojai);
-//     random_device rd; 
-//     mt19937 gen(rd());
-
-//     ofstream of("itrauktos_transakcijos.txt");
-
-
-//     if(blokai.empty()){
-        
-//         vector<transakcija> genesiui;
-//         blokas genesis(genesiui, "0", "0.1", 1);
-//         cout<<"Genesis blokas generuotas: "<< endl;
-//         genesis.bloku_kasimas();
-//         genesis.info();
-//         blokai.emplace_back(genesis);
-
-//     }
-
-//     while ( !transakcijos.empty() ) {
-        
-//         auto kandidatai = generuoti_kandidatinius_blokus(transakcijos, blokai.back().get_hashas(), "0.1", 3, 100);
-
-//         blokas geriausias_kandidatas;
-//         for(int i = 0; i < dydis && !transakcijos.empty(); ++i){
-
-//             uniform_int_distribution<> rand_transakcija(0, transakcijos.size() - 1);   // random parenka vartotojo numeri
-//             int idx = rand_transakcija(gen);
-            
-
-//             if (!transakcijos[idx].patikrinti_hash()) {
-//                 cout << "Transakcija su netinkamu ID, ignoruojama.\n";
-//                 continue;
-//             }
-
-//             if(trans_ivykdymas(vartotojai, transakcijos[idx].get_siuntejas(), 
-//             transakcijos[idx].get_gavejas(), transakcijos[idx].get_suma()) ){
-                
-//                 tran100.emplace_back(transakcijos[idx]);
-//                 of << transakcijos[idx].info() << std::endl;
-                
-
-//             }
-//             transakcijos.erase(transakcijos.begin() + idx);
-//         }
-
-//         blokas blok( tran100, blokai.back().get_hashas(), "0.1", 3);
-//         cout<<"\nbloku kasimas: "<<endl;
-//         blok.bloku_kasimas();
-//         blok.info();
-//         blokai.emplace_back(blok);
-
-//     }
-
-//     of.close();
-// }
 
 bool trans_ivykdymas( std::vector<vartotojas>& vartotojai, const string& siuntejas, const string& gavejas, const int suma){
 
@@ -330,74 +286,61 @@ bool trans_ivykdymas( std::vector<vartotojas>& vartotojai, const string& siuntej
         return (var.get_viesasisis_raktas() == gavejas) ;
     });
 
-    if(siuntejass->get_valiutos_balansas() < suma){
+    if(siuntejass->get_valiutos_balansas() < suma){         // tikrina balansa
 
         return false;
     }
 
     if (siuntejass != vartotojai.end() && gavejass != vartotojai.end()) {
 
-        cout<<"\nsuma: "<< suma << endl;
-        cout<<"siuntejas: "<< siuntejass->get_valiutos_balansas()<<endl;
-        cout<<"gavejas: "<< gavejass->get_valiutos_balansas()<<endl;
+        // cout<<"\nsuma: "<< suma << endl;
+        // cout<<"siuntejas: "<< siuntejass->get_valiutos_balansas()<<endl;
+        // cout<<"gavejas: "<< gavejass->get_valiutos_balansas()<<endl;
         siuntejass->set_valiutos_balansas(siuntejass->get_valiutos_balansas() - suma);
         gavejass->set_valiutos_balansas(gavejass->get_valiutos_balansas() + suma);
-        cout<<"po siuntejo: "<< siuntejass->get_valiutos_balansas()<<endl;
-        cout<<"po gavejo: "<< gavejass->get_valiutos_balansas()<<endl;
+        // cout<<"po siuntejo: "<< siuntejass->get_valiutos_balansas()<<endl;
+        // cout<<"po gavejo: "<< gavejass->get_valiutos_balansas()<<endl;
     
     }
 
     return true;
 }
 
-// string blokas::bloku_kasimas(){
 
-//     auto pradzia = chrono::high_resolution_clock::now();
-//     int bandymai = 0;
+string blokas::bloku_kasimas(const int laikas_max, const int bandymai_max){
 
-//     do {
-//         ++nonce; 
-//         string ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
-//         hashas = nuu.hash(ivestis);
-//         cout << "Su nonce " << nonce << " hash: " << hashas << endl;
-//         ++bandymai;
-
-//         auto pabaiga = chrono::high_resolution_clock::now();
-
-//         if (hashas.substr(0, sudetingumas) == string(sudetingumas, '0')) {
-//             cout << "Blokas iškastas! Nonce: " << nonce << ", hash: " << hashas << endl;
-//             return hashas; 
-//         }
-
-//         auto laikas = chrono::duration_cast<chrono::seconds>(pabaiga - pradzia).count();
-
-
-//         if (laikas > 5 || bandymai >= 100000) {
-//             cout << "Ribotas kasimo laikas pasiektas. Bloką kase: "<<laikas<<" sekundes"<<endl;
-//             return "";  // Grąžiname tuščią reikšmę, jei blokas nebuvo iškastas
-//         }
-//     } while (true);
-//     cout << "Blokas iskastas. Nonce: " << nonce << ", hash: " << hashas << endl;
-//     return hashas;
-              
-// }
-
-string blokas::bloku_kasimas(){
+    auto pradzia = chrono::high_resolution_clock::now();
 
     do {
         ++nonce; 
         string ivestis = pries_blokas + laikas + versija + merkel_root + to_string(nonce);
         hashas = nuu.hash(ivestis);
-        cout << "Trying nonce " << nonce << " -> Hash: " << hashas << endl;
-    } while (hashas.substr(0, sudetingumas) != string(sudetingumas, '0')); 
 
-    cout << "Blokas iskastas. Nonce: " << nonce << ", hash: " << hashas << "transakciju sk: "<< transakcijos.size() <<endl;
+        auto pabaiga = chrono::high_resolution_clock::now();        
+
+        if (hashas.substr(0, sudetingumas) == string(sudetingumas, '0')) {
+
+
+            auto laikas = chrono::duration_cast<chrono::milliseconds>(pabaiga - pradzia).count();
+            if ( (laikas > laikas_max) || (nonce >= bandymai_max) ) { // milisekundemis
+                cout << "Pasiektas ribotas kasimo laikas arba bandymu kiekis. Bloka kase: "<<laikas<<" milisekundes ir "<< nonce << " kartus"<<endl;
+                return ""; 
+            }
+            else{
+                cout << "Blokas iskastas per " << laikas << " milisekundes. bandymai: " << nonce << ", hash: " << hashas << endl;
+                return hashas; 
+            }
+        }
+
+
+    } while (true);
+
     return hashas;
               
 }
 
 
-bool transakcija::patikrinti_hash()  {
+bool transakcija::patikrinti_hash()  {              // transakcijos maišos reikšmės tikrinimas
     string input = siuntejas + gavejas + to_string(suma);
     string expected_ID = nuu.hash(input);
     return expected_ID == ID;
@@ -419,23 +362,25 @@ const std::string& pries_blokas, const std::string& versija, int sudetingumas, i
         for (int j = 0; j < 100; ++j) {
             int idx = rand_transakcija(gen);
 
-            if (!transakcijos[idx].patikrinti_hash()) {
+            if (!transakcijos[idx].patikrinti_hash()) {                 // transakcijos maišos reikšmės tikrinimas
                 cout << "Transakcija su netinkamu ID, ignoruojama.\n";
                 continue;
             }
 
             if(trans_ivykdymas(vartotojai, transakcijos[idx].get_siuntejas(), 
+            transakcijos[idx].get_gavejas(), transakcijos[idx].get_suma()) ){
                 
-                transakcijos[idx].get_gavejas(), transakcijos[idx].get_suma()) ){
                 kandidato_transakcijos.emplace_back(transakcijos[idx]);
                     
             }
-            for (const auto& trans : kandidato_transakcijos) {
-                of << trans.info() << std::endl; // Output each transaction’s info
-            }
-
         }
 
+        blokas kandidatas(kandidato_transakcijos, pries_blokas, versija, sudetingumas);
+        blokai_kandidatai.push_back(kandidatas);
+
+        for (const auto& trans : kandidato_transakcijos) {
+            of << trans.info() << std::endl; 
+        }
         
     }
 
@@ -443,7 +388,6 @@ const std::string& pries_blokas, const std::string& versija, int sudetingumas, i
 
     return blokai_kandidatai;
 }
-
 
 
 
