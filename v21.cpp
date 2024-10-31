@@ -232,7 +232,7 @@ void blokas::transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai){
 
     while ( blokai.size() < 6 ) {
         
-        vector<blokas> kandidat_blokai = generuoti_kandidatinius_blokus(transakcijos, blokai.back().get_hashas(), "0.2", 5, 5);
+        vector<blokas> kandidat_blokai = generuoti_kandidatinius_blokus(transakcijos, blokai.back().get_hashas(), "0.2", 4, 5);
         bool block_mined = false;
         vector<int> panaudoti;  // ineksai
         uniform_int_distribution<> rand_kandidatas(0, kandidat_blokai.size() - 1);
@@ -242,11 +242,13 @@ void blokas::transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai){
         while (!block_mined && panaudoti.size() < kandidat_blokai.size()) {
 
             int idx;
-            panaudoti.push_back(idx);
+            
             do {
                 idx = rand_kandidatas(gen);
-            } while (find(panaudoti.begin(), panaudoti.end(), idx) != panaudoti.end());    // uztikrina kad nkastu to pacio bloko kelis kartus
+            } while (find(panaudoti.begin(), panaudoti.end(), idx) != panaudoti.end());    // uztikrina kad nekastu to pacio bloko kelis kartus
 
+
+            panaudoti.push_back(idx);   
 
             cout << "\nKasamas " << idx + 1 << endl;
             string iskastas = kandidat_blokai[idx].bloku_kasimas(laikas_max, bandymai_max);
@@ -263,7 +265,9 @@ void blokas::transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai){
             
 
         if (!block_mined) {
-            std::cout << "Neiskastas nei vienas blokas. Didinamas laikas ir bandymai \n";
+            
+            cout <<"------------------------------------------------------------"<<endl;
+            cout << "Neiskastas nei vienas blokas. Didinamas laikas ir bandymai \n";
             laikas_max += 5000; 
             bandymai_max += 100000; 
         }
