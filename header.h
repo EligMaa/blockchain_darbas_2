@@ -70,7 +70,6 @@ class UTXO {
         string savininko_adresas;
         int suma;
 
-
         UTXO( ){};
         UTXO( string adr, int sum) 
             : savininko_adresas(adr), suma(sum){
@@ -82,22 +81,6 @@ class UTXO {
         inline ~UTXO() {}
 
 };
-
-// class UTXO{
-// public:
-//     string transakcijosID;
-//     string utxoID;
-//     int indeksas;
-//     string vartotojoPK;
-//     int suma;
-//     UTXO(){}
-//     UTXO(int suma, string useris):
-//     suma_(suma), vartotojoPK(useris){
-//         utxoID = hashFunkcija(vartotojoPK+to_string(suma));
-//     }
-
-// };
-
 
 class vartotojas{
 
@@ -234,6 +217,7 @@ class blokas{
         
 
         void transakciju_itraukimas_i_bloka(int dydis, vector<blokas>& blokai);
+        void transakciju_itraukimas_i_bloka_1(int dydis, vector<blokas>& blokai_1);
 
         string get_markel_root() { return merkel_root;}
         string get_hashas() const { return hashas;}
