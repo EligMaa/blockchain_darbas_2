@@ -74,7 +74,7 @@ bool transakcija::patikrinti_hash()  {
 }
 ```
 ## Patobulintas blokų kasimo procesas
-Funkcija ```generuoti_kandidatinius_blokus``` sugeneruoja 5 potencialius blokus (kandidatus) iš ~100 atsitiktinai pasirinktų transakcijų. Transakcijos blokuose gali kartotis. Funkcija ```blokas::transakciju_itraukimas_i_bloka``` pasinaudoja prieš tai pateikta funkcija ir sugeneruoja 5 blokus. ada sukuriamas kasybos cikras, kuriuo metu atsitiktinai pasirenkamas kandidatinis blokas iš ```kandidat_blokai``` sąrašo ir bandoma jį iškast. Jeigu bloką pavyksta iškasti (t. y., sukurta hash reikšmė atitinka sudėtingumo lygį) ir pars kasimas neužtruko ilgiau nei 5 sekundžių arba 100000 bandymų, blokas yra pridedamas prie ```blokai``` grandinės. Jeigu nė vienas kandidatinis blokas nebuvo iškastas per nustatytą laiką ar bandymų skaičių, padidinamas maksimalus laiko limitas ir bandymų skaičius, kad padidėtų tikimybė iškasti bloką kitame cikle.
+Funkcija ```generuoti_kandidatinius_blokus``` sugeneruoja 5 potencialius blokus (kandidatus) iš ~100 atsitiktinai pasirinktų transakcijų. Transakcijos blokuose gali kartotis. Funkcija ```blokas::transakciju_itraukimas_i_bloka``` pasinaudoja prieš tai pateikta funkcija ir sugeneruoja blokus. Tada sukuriamas kasybos cikras, kuriuo metu atsitiktinai pasirenkamas kandidatinis blokas iš ```kandidat_blokai``` sąrašo ir bandoma jį iškast. Jeigu bloką pavyksta iškasti (t. y., sukurta hash reikšmė atitinka sudėtingumo lygį) ir pars kasimas neužtruko ilgiau nei 5 sekundžių arba 100000 bandymų, blokas yra pridedamas prie ```blokai``` grandinės. Jeigu nė vienas kandidatinis blokas nebuvo iškastas per nustatytą laiką ar bandymų skaičių, padidinamas maksimalus laiko limitas ir bandymų skaičius, kad padidėtų tikimybė iškasti bloką kitame cikle.
 
 
 
