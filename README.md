@@ -77,6 +77,10 @@ bool transakcija::patikrinti_hash()  {
 Funkcija ```generuoti_kandidatinius_blokus``` sugeneruoja 5 potencialius blokus (kandidatus) iš ~100 atsitiktinai pasirinktų transakcijų. Transakcijos blokuose gali kartotis. Funkcija ```blokas::transakciju_itraukimas_i_bloka``` pasinaudoja prieš tai pateikta funkcija ir sugeneruoja 5 blokus. ada sukuriamas kasybos cikras, kuriuo metu atsitiktinai pasirenkamas kandidatinis blokas iš ```kandidat_blokai``` sąrašo ir bandoma jį iškast. Jeigu bloką pavyksta iškasti (t. y., sukurta hash reikšmė atitinka sudėtingumo lygį) ir pars kasimas neužtruko ilgiau nei 5 sekundžių arba 100000 bandymų, blokas yra pridedamas prie ```blokai``` grandinės. Jeigu nė vienas kandidatinis blokas nebuvo iškastas per nustatytą laiką ar bandymų skaičių, padidinamas maksimalus laiko limitas ir bandymų skaičius, kad padidėtų tikimybė iškasti bloką kitame cikle.
 
 
+
+
+
+
 ## Naudojimosi instrukcijos
 1. Diegimas
 * **Visual Studio Code** diegimas: jei jo neturite, galite sekti šią vaizdo įrašų instrukciją: https://www.youtube.com/watch?v=DMWD7wfhgNY
@@ -86,6 +90,105 @@ Funkcija ```generuoti_kandidatinius_blokus``` sugeneruoja 5 potencialius blokus 
 * Paleiskite šias komandas terminale, kad sukompiliuotumėte ir paleistumėte programą
   - ```g++ v21.cpp header.h kod.h -o prog```
   - ```./prog```
+ 
+3. Instrukcija, kaip naudotis programa:
+Po programos paleidimo jums bus pateiktas meniu su pasirinkimais.
+```
+---------- Menu ----------
+1 - isspausdinti visus blokus
+2 - isspausdinti transakcijas bloke
+3 - isspaustinti transakcijos informacija
+4 - isspausdinti vartotoja
+0 - baigti darba
+Pasirink nuo 0 iki 4:
+```
+1 - Išspausdinti visus blokus <br>
+Pasirinkus šią komandą, programa peržiūri visus sukurtus blokus ir išspausdina kiekvieno bloko informaciją. <br>
+2 - Išspausdinti transakcijas bloke <br>
+Pasirinkus šią komandą, galėsite peržiūrėti visų transakcijų informaciją konkrečiame bloke. Jums bus paprašyta įvesti bloko hash reikšmę, kad būtų surastas norimas blokas. <br>
+3 - Išspausdinti transakcijos informaciją <br>
+Ši komanda leidžia jums gauti konkrečios transakcijos informaciją pagal jos ID. <br>
+4 - Išspausdinti vartotoją <br>
+Ši komanda leidžia ieškoti ir spausdinti konkretaus vartotojo informaciją, remiantis jo viešuoju raktu. <br>
+0 - Baigti darbą <br>
+Pasirinkus šią komandą, programa bus uždaryta. <br>
 
+ 
+## Papildomos užduotys
+
+### UTXO modelio naudojimas vietoj sąskaitos modelio
+
+Sukurta klasė:
+```
+class UTXO {
+    public:
+        nuu nuu;
+        string ID;
+        // int indeksas;
+        string savininko_adresas;
+        int suma;
+
+        UTXO( ){};
+        UTXO( string adr, int sum) 
+            : savininko_adresas(adr), suma(sum){
+
+                string ivestis = adr + to_string(sum);
+                ID = nuu.hash(ivestis);
+            }
+        inline ~UTXO() {}
+
+};
+```
+Vartotojas yra blockchain dalyvis, kuris gali turėti ir naudoti UTXO:
+```
+class vartotojas{
+    public:
+        nuu nuu;
+        vartotojas() : viesasisis_raktas(""), vardas("") {}
+        vartotojas(string vardas) 
+            : viesasisis_raktas(nuu.hash(vardas)), 
+            vardas(vardas) {}
+
+        inline ~vartotojas() {}
+
+        int apskaiciuoti_balansa() const {
+            int balansas = 0;
+            for (const auto& ut : utxos) {
+                balansas += ut.suma;
+            }
+            return balansas;
+        }
+        void prideti_UTXO(const UTXO& utxo) {
+            utxos.push_back(utxo);
+        }
+        void pasalinti_UTXO(const string& ID) {
+            auto it = std::find_if(utxos.begin(), utxos.end(), [&ID](const UTXO& ut) {
+                return ut.ID == ID;
+            });
+            if (it != utxos.end()) {
+                utxos.erase(it);
+            }
+        }
+        std::vector<UTXO> get_UTXOs() const { return utxos; }
+        string get_viesasisis_raktas() const { return viesasisis_raktas; }
+        void info() const {
+            cout<<"Viesasisis raktas: " << viesasisis_raktas  << "\nVardas: " << vardas << endl;
+            cout<<"Balansas: " << apskaiciuoti_balansa() << endl;
+            cout<<"Utxos: " << endl;
+            for (const auto& utxo : utxos) {
+                cout << utxo.suma << ", ID: " << utxo.ID << endl;    
+            }
+        }
+    private:
+        string viesasisis_raktas;
+        string vardas;   
+        vector<UTXO> utxos;
+        
+};
+```
+* utxos: tai vektorius UTXO objektų, kurie priklauso vartotojui
+* ```apskaiciuoti_balansa()```: ši funkcija skaičiuoja vartotojo balansą, sumuojant visas vartotojui priklausančias UTXO sumas. Ji pereina per visą utxos sąrašą ir sudeda kiekvieno UTXO sumas
+* ```prideti_UTXO(const UTXO& utxo)```: prideda naują UTXO prie vartotojo UTXO sąrašo (utxos), kai vartotojas gauna naują transakciją
+* ```pasalinti_UTXO(const string& ID)```: ištrina UTXO, kai jis yra panaudojamas (pvz., vykdant transakciją). Tai atliekama surandant atitinkamą UTXO pagal jo ID ir pašalinant jį iš utxos sąrašo
 
 
