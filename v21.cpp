@@ -1,5 +1,6 @@
 #include "header.h"
 #include "kod.h"
+#include <omp.h>
 
 
 std::vector<vartotojas>vartotoju_generavimas(int dydis);
@@ -16,6 +17,7 @@ std::vector<vartotojas> vartotojai;
 int main(){
 
     blokas();
+
 
 
     int meniu;
@@ -151,21 +153,37 @@ blokas::blokas(){
 
 std::vector<vartotojas> vartotoju_generavimas (int dydis){
 
-    // vector <vartotojas> vartotojai;
+    ofstream of("vartotojai.txt");
+
     vartotojai.reserve(dydis);
     random_device rd;
     mt19937 gen(rd());
 
-    uniform_int_distribution<> balan(100, 1000000);     // intervalas tarp 100 ir 1000000, 
-                                                        // parenka random skaiciu
+    uniform_int_distribution<> balan(100, 1000000); 
+    uniform_int_distribution<> randomas(1, 10);
+    
 
-    for (int i = 1; i <= dydis; ++i) {
+    for (int i = 0; i < dydis; ++i) {
 
         string vardai = "vardas";
-        vardai += to_string(i);
-        int balansas = balan(gen);
-        vartotojai.emplace_back(balansas, vardai);
+        vardai += to_string(i + 1);
+        vartotojai.emplace_back(vardai);
+
+        int kiek = randomas(gen);
+        of << vardai << ": "  << endl;
+
+        for (int j = 0; j < kiek; j++) {
+            
+            int balansas = balan(gen);
+            of << balansas << ", " ;
+            UTXO n (vardai, balansas);
+            vartotojai[i].prideti_UTXO(n);
+        }
+
+        of<<endl;
     }
+
+    of.close();
 
     return vartotojai;
 }
@@ -290,22 +308,54 @@ bool trans_ivykdymas( std::vector<vartotojas>& vartotojai, const string& siuntej
         return (var.get_viesasisis_raktas() == gavejas) ;
     });
 
-    if(siuntejass->get_valiutos_balansas() < suma){         // tikrina balansa
+    if(siuntejass->apskaiciuoti_balansa() < suma){         // tikrina balansa
 
         return false;
     }
 
-    if (siuntejass != vartotojai.end() && gavejass != vartotojai.end()) {
-
-        // cout<<"\nsuma: "<< suma << endl;
-        // cout<<"siuntejas: "<< siuntejass->get_valiutos_balansas()<<endl;
-        // cout<<"gavejas: "<< gavejass->get_valiutos_balansas()<<endl;
-        siuntejass->set_valiutos_balansas(siuntejass->get_valiutos_balansas() - suma);
-        gavejass->set_valiutos_balansas(gavejass->get_valiutos_balansas() + suma);
-        // cout<<"po siuntejo: "<< siuntejass->get_valiutos_balansas()<<endl;
-        // cout<<"po gavejo: "<< gavejass->get_valiutos_balansas()<<endl;
+    int totalSelectedAmount = 0;
+    std::vector<UTXO> selectedUTXOs;
     
+    // cout<<"sintejas siuncia: "<<endl;
+    for (const auto& utxo : siuntejass->get_UTXOs()) {  // Assumes get_UTXOs() returns a list of sender's UTXOs
+        selectedUTXOs.push_back(utxo);
+        totalSelectedAmount += utxo.suma;
+        // cout<< utxo.suma<<", ";
+        
+        if (totalSelectedAmount >= suma) break;
     }
+
+    // // Check if we have enough UTXOs to cover the amount
+    // if (totalSelectedAmount < suma) {
+    //     std::cout << "Not enough UTXOs to cover the transaction amount.\n";
+    //     return false;
+    // }
+
+    // Step 2: Calculate change, if any
+    int change = totalSelectedAmount - suma;
+
+
+
+    // Step 3: Update UTXO records for sender and receiver
+    // Remove used UTXOs from the sender
+    for (const auto& utxo : selectedUTXOs) {
+        siuntejass->pasalinti_UTXO(utxo.ID);
+    }
+
+    // Create a new UTXO for the recipient with the amount of the transaction
+    UTXO recipientUTXO(gavejas, suma);
+    gavejass->prideti_UTXO(recipientUTXO);
+
+    // If there's a change, create a new UTXO for the sender
+    if (change > 0) {
+        UTXO changeUTXO(siuntejas, change);
+        siuntejass->prideti_UTXO(changeUTXO);
+    }
+
+    // std::cout << "Transaction successful.\n";
+    // std::cout << "Sender's new balance: " << siuntejass->apskaiciuoti_balansa() << std::endl;
+    // std::cout << "Recipient's new balance: " << gavejass->apskaiciuoti_balansa() << std::endl;
+
 
     return true;
 }
@@ -314,6 +364,10 @@ bool trans_ivykdymas( std::vector<vartotojas>& vartotojai, const string& siuntej
 string blokas::bloku_kasimas(const int laikas_max, const int bandymai_max){
 
     auto pradzia = chrono::high_resolution_clock::now();
+    #pragma omp parallel num_thread(1)
+
+
+    #pragma omp parallel shared(...,nthreads,chunk) private(...)
 
     do {
         ++nonce; 
@@ -342,6 +396,9 @@ string blokas::bloku_kasimas(const int laikas_max, const int bandymai_max){
     return hashas;
               
 }
+
+
+
 
 
 bool transakcija::patikrinti_hash()  {              // transakcijos maišos reikšmės tikrinimas
@@ -375,8 +432,7 @@ const std::string& pries_blokas, const std::string& versija, int sudetingumas, i
             transakcijos[idx].get_gavejas(), transakcijos[idx].get_suma()) ){
                 
                 kandidato_transakcijos.emplace_back(transakcijos[idx]);
-                    
-            }
+                }
         }
 
         blokas kandidatas(kandidato_transakcijos, pries_blokas, versija, sudetingumas);
@@ -384,8 +440,7 @@ const std::string& pries_blokas, const std::string& versija, int sudetingumas, i
 
         for (const auto& trans : kandidato_transakcijos) {
             of << trans.info() << std::endl; 
-        }
-        
+        }        
     }
 
     of.close();

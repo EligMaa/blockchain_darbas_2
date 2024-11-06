@@ -54,18 +54,19 @@ string nuu::hash(string &ivestis){
 }
 string nuu::konvertavimas(const array<unsigned long long, 4>& hash){
 
-    vector <unsigned long long> druska = {192837645ULL, 1098765432ULL, 123456789ULL, 987654321ULL};
-    vector<char> druska1 = {'-','$','#','@'};
-    vector<char> druska2 = {'&','/','*',','};
+    // vector <unsigned long long> druska = {192837645ULL, 1098765432ULL, 123456789ULL, 987654321ULL};
+    // vector<char> druska1 = {'-','$','#','@'};
+    // vector<char> druska2 = {'&','/','*',','};
     stringstream ss;
-    int i = 0;
-
+  
     for (const auto& n : hash) {
         
-        unsigned long long druskintas = n * druska[3 - i] + druska1[3 - i] * druska2[3 - i];
+        // unsigned long long druskintas = n * druska[3 - i] + druska1[3 - i] * druska2[3 - i];
         // 64 bits -> 16 hex 
-        ss << setw(16) << setfill('5') << hex << druskintas; 
-        ++i;
+        // ss << setw(16) << setfill('0') << hex << druskintas; 
+
+        ss << hex << setw(16) << setfill('0') << (n & 0xFFFFFFFFFFFFFFFFULL);
+
     }
     return ss.str();
 

@@ -60,31 +60,99 @@ class nuu{
 nuu::nuu(){
 }
 
+
+class UTXO {
+    public:
+
+        nuu nuu;
+        string ID;
+        // int indeksas;
+        string savininko_adresas;
+        int suma;
+
+
+        UTXO( ){};
+        UTXO( string adr, int sum) 
+            : savininko_adresas(adr), suma(sum){
+
+                string ivestis = adr + to_string(sum);
+                ID = nuu.hash(ivestis);
+            }
+
+        inline ~UTXO() {}
+
+};
+
+// class UTXO{
+// public:
+//     string transakcijosID;
+//     string utxoID;
+//     int indeksas;
+//     string vartotojoPK;
+//     int suma;
+//     UTXO(){}
+//     UTXO(int suma, string useris):
+//     suma_(suma), vartotojoPK(useris){
+//         utxoID = hashFunkcija(vartotojoPK+to_string(suma));
+//     }
+
+// };
+
+
 class vartotojas{
 
     public:
         nuu nuu;
 
         // vartotojas();
-        vartotojas() : viesasisis_raktas(""), valiutos_balansas(0), vardas("") {}
-        vartotojas(int valiutos_balansas, string vardas) 
+        vartotojas() : viesasisis_raktas(""), vardas("") {}
+        vartotojas(string vardas) 
             : viesasisis_raktas(nuu.hash(vardas)), 
-            valiutos_balansas(valiutos_balansas), vardas(vardas) {}
+            vardas(vardas) {}
 
         inline ~vartotojas() {}
 
+        int apskaiciuoti_balansa() const {
+            int balansas = 0;
+            for (const auto& ut : utxos) {
+                balansas += ut.suma;
+            }
+            return balansas;
+        }
+
+        void prideti_UTXO(const UTXO& utxo) {
+            utxos.push_back(utxo);
+        }
+
+        void pasalinti_UTXO(const string& ID) {
+            auto it = std::find_if(utxos.begin(), utxos.end(), [&ID](const UTXO& ut) {
+                return ut.ID == ID;
+            });
+            if (it != utxos.end()) {
+                utxos.erase(it);
+            }
+        }
+
+        std::vector<UTXO> get_UTXOs() const { return utxos; }
+
+        
+
         string get_viesasisis_raktas() const { return viesasisis_raktas; }
-        int get_valiutos_balansas() const { return valiutos_balansas; }
-        int set_valiutos_balansas(int balansas) { valiutos_balansas = balansas; }
+        
 
         void info() const {
-            cout<<"Viesasisis raktas: " << viesasisis_raktas << "\nbalansas: " << valiutos_balansas << "\nVardas: " << vardas << endl;
+            cout<<"Viesasisis raktas: " << viesasisis_raktas  << "\nVardas: " << vardas << endl;
+            cout<<"Balansas: " << apskaiciuoti_balansa() << endl;
+            cout<<"Utxos: " << endl;
+            for (const auto& utxo : utxos) {
+                cout << utxo.suma << ", ID: " << utxo.ID << endl;    
+            }
         }
 
     private:
         string viesasisis_raktas;
-        int valiutos_balansas;
         string vardas;   
+        vector<UTXO> utxos;
         
 };
 
@@ -193,7 +261,6 @@ class blokas{
        
         
 };
-
 
 string blokas::skaiciuoti_merkel_root(vector<transakcija>& transakcijos) {
     // Jeigu transakcijų nėra, grąžinkite tuščią maišos reikšmę.
