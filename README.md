@@ -74,10 +74,11 @@ bool transakcija::patikrinti_hash()  {
 }
 ```
 ## Patobulintas blokų kasimo procesas
-Funkcija ```generuoti_kandidatinius_blokus``` sugeneruoja 5 potencialius blokus (kandidatus) iš ~100 atsitiktinai pasirinktų transakcijų. Transakcijos blokuose gali kartotis. Funkcija ```blokas::transakciju_itraukimas_i_bloka``` pasinaudoja prieš tai pateikta funkcija ir sugeneruoja blokus. Tada sukuriamas kasybos cikras, kuriuo metu atsitiktinai pasirenkamas kandidatinis blokas iš ```kandidat_blokai``` sąrašo ir bandoma jį iškast. Jeigu bloką pavyksta iškasti (t. y., sukurta hash reikšmė atitinka sudėtingumo lygį) ir pars kasimas neužtruko ilgiau nei 5 sekundžių arba 100000 bandymų, blokas yra pridedamas prie ```blokai``` grandinės. Jeigu nė vienas kandidatinis blokas nebuvo iškastas per nustatytą laiką ar bandymų skaičių, padidinamas maksimalus laiko limitas ir bandymų skaičius, kad padidėtų tikimybė iškasti bloką kitame cikle.
+Funkcija ```generuoti_kandidatinius_blokus``` sugeneruoja 5 potencialius blokus (kandidatus) iš ~100 atsitiktinai pasirinktų transakcijų. Transakcijos blokuose gali kartotis. Funkcija ```blokas::transakciju_itraukimas_i_bloka``` pasinaudoja prieš tai pateikta funkcija ir sugeneruoja blokus. Tada sukuriamas kasybos ciklas, kuriuo metu atsitiktinai pasirenkamas kandidatinis blokas iš ```kandidat_blokai``` sąrašo ir bandoma jį iškast. Jeigu bloką pavyksta iškasti (t. y., sukurta hash reikšmė atitinka sudėtingumo lygį) ir pars kasimas neužtruko ilgiau nei 5 sekundžių arba 100000 bandymų, blokas yra pridedamas prie ```blokai``` grandinės. Jeigu nė vienas kandidatinis blokas nebuvo iškastas per nustatytą laiką ar bandymų skaičių, padidinamas maksimalus laiko limitas ir bandymų skaičius, kad padidėtų tikimybė iškasti bloką kitame cikle.
 
-
-
+## Gerosios OOP praktikos
+### Encapsuliacija
+Encapsuliacija yra viena iš svarbiausių OOP praktikų, kurios tikslas yra apsaugoti objekto duomenis nuo tiesioginio išorinio manipuliavimo. Ši praktika yra naudojama apibrėžiant klasių privačius atributus. Klasės ```vartotojas``` ir ```UTXO``` turi privačius atributus, pvz., viesasisis_raktas, vardas ir utxos, o prieiga prie šių atributų atliekama per viešas metodų funkcijas, pvz., get_viesasisis_raktas(). Atributai, kurie neturėtų būti prieinami tiesiogiai, yra apsaugoti nuo išorinio manipuliavimo, o prieiga prie jų kontroliuojama per metodus. 
 
 
 
